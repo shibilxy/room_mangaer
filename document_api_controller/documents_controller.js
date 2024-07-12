@@ -5,6 +5,8 @@ const path = require("path");
 const util = require("util");
 
 class DocumentsController {
+  static url = "http://localhost:3000/";
+
   static getDocument(documentId) {
     const query = util.promisify(con.query).bind(con);
     return query("SELECT path FROM document WHERE id = ? ", [documentId])
@@ -17,7 +19,6 @@ class DocumentsController {
 
   static addDocument(file) {
     return new Promise((resolve, reject) => {
-      // Replace with your project's root directory
       const projectDir = path.dirname(require.main.filename);
       const storageDir = path.join(projectDir, "storage");
 
@@ -28,7 +29,8 @@ class DocumentsController {
       const uniqueFilename = `${Date.now()}-${file[0].originalname}`;
       const filePath = path.join(storageDir, uniqueFilename);
 
-      // Save the file to the storage directory
+      const storePath = this.url + "storage/" + uniqueFilename; // Use forward slash
+
       fs.writeFile(filePath, file[0].buffer, (err) => {
         if (err) {
           return reject({
@@ -37,14 +39,14 @@ class DocumentsController {
           });
         }
 
-        // Prepare data for the database insertion
         const data = {
           name: file[0].originalname,
-          path: filePath,
+          path: storePath,
           date: new Date(),
         };
 
-        // Insert into the database
+        console.log('File stored at:', storePath);
+
         con.query("INSERT INTO document SET ?", data, (err, result) => {
           if (err) {
             return reject({
@@ -64,12 +66,11 @@ class DocumentsController {
     });
   }
 
+
   static updateDocument(id, file) {
-    // Start with the base query
-    let query = "UPDATE document SET name = ?, path = ?, date = ? WHERE id = ?";
+    const query = "UPDATE document SET name = ?, path = ?, date = ? WHERE id = ?";
 
     return new Promise((resolve, reject) => {
-      // Create the storage directory if it doesn't exist
       const projectDir = path.dirname(require.main.filename);
       const storageDir = path.join(projectDir, "storage");
 
@@ -79,80 +80,69 @@ class DocumentsController {
 
       const uniqueFilename = `${Date.now()}-${file[0].originalname}`;
       const filePath = path.join(storageDir, uniqueFilename);
+      const storePath = this.url + "storage/" + uniqueFilename; // Use forward slashes
 
-      // Save the file to the storage directory
       fs.writeFile(filePath, file[0].buffer, (err) => {
         if (err) {
-          console, log(file);
+          console.log('Error writing file:', err);
           return reject({
             success: false,
             message: err.message,
-            ok2,
           });
         }
 
-        // First, retrieve the existing file path from the database
-        con.query(
-          "SELECT path FROM document WHERE id = ?",
-          [id],
-          (err, result) => {
+        con.query("SELECT path FROM document WHERE id = ?", [id], (err, result) => {
+          if (err) {
+            return reject({
+              success: false,
+              message: err.message,
+            });
+          }
+
+          if (result.length > 0) {
+            const existingFilePath = result[0].path.replace(this.url, '');
+            const absoluteExistingFilePath = path.join(projectDir, existingFilePath);
+
+            fs.unlink(absoluteExistingFilePath, (err) => {
+              if (err) {
+                console.log(`Failed to delete existing file: ${absoluteExistingFilePath}`);
+              }
+            });
+          } else {
+            return reject({
+              success: false,
+              message: "No document found with the given ID",
+            });
+          }
+
+          console.log('New file stored at:', storePath);
+
+          const data = {
+            name: file[0].originalname,
+            path: storePath,
+            date: new Date(),
+          };
+
+          con.query(query, [data.name, data.path, data.date, id], (err, result) => {
             if (err) {
               return reject({
                 success: false,
                 message: err.message,
-                okk: 0,
-              });
-            }
-
-            if (result.length > 0) {
-              const existingFilePath = result[0].path;
-
-              // Delete the existing file from the file system
-              fs.unlink(existingFilePath, (err) => {
-                if (err) {
-                  console.log(
-                    `Failed to delete existing file: ${existingFilePath}`
-                  );
-                }
               });
             } else {
-              reject({
-                success: false,
-                message: "No document found with the given ID",
+              return resolve({
+                success: true,
+                data: {
+                  docid: id,
+                },
               });
             }
-            // Prepare data for the database update
-            const data = {
-              name: file[0].originalname,
-              path: filePath,
-              date: new Date(),
-            };
-
-            // Update the database
-            con.query(
-              query,
-              [data.name, data.path, data.date, id],
-              (err, result) => {
-                if (err) {
-                  return reject({
-                    success: false,
-                    message: err.message,
-                  });
-                } else {
-                  return resolve({
-                    success: true,
-                    data: {
-                      docid: id, // Assuming id remains the same
-                    },
-                  });
-                }
-              }
-            );
-          }
-        );
+          });
+        });
       });
     });
   }
+
 
   static deleteDocument(req, res) {
     const document_id = req.params.id;

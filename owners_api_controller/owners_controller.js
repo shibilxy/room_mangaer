@@ -239,8 +239,12 @@ class OwnersController {
       data.push(req.params.id);
 
       // Execute the update query
-      const updateResult = await query(updateQuery, data);
-      res.send(updateResult);
+      await query(updateQuery, data);
+      res.send({
+        success: true,
+        data: {},
+        message: "owner updated successfully",
+      });
     } catch (err) {
       console.log(err);
       res.status(500).send({ error: err.message });
