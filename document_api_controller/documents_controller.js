@@ -1,29 +1,28 @@
+const { log } = require("console");
 const con = require("../connection");
 const fs = require("fs");
 const path = require("path");
-const util = require('util');
-
+const util = require("util");
 
 class DocumentsController {
   static getDocument(documentId) {
     const query = util.promisify(con.query).bind(con);
     return query("SELECT path FROM document WHERE id = ? ", [documentId])
-        .then(result => result[0] ? result[0].path : '')  // Return the document URL or an empty string if not found
-        .catch(err => {
-            console.error(err);
-            throw err;
-        });
-}
+      .then((result) => (result[0] ? result[0].path : "")) // Return the document URL or an empty string if not found
+      .catch((err) => {
+        console.error(err);
+        throw err;
+      });
+  }
 
-    
-static addDocument(file, name) {
-  return new Promise((resolve, reject) => {
+  static addDocument(file) {
+    return new Promise((resolve, reject) => {
       // Replace with your project's root directory
       const projectDir = path.dirname(require.main.filename);
       const storageDir = path.join(projectDir, "storage");
 
       if (!fs.existsSync(storageDir)) {
-          fs.mkdirSync(storageDir);
+        fs.mkdirSync(storageDir);
       }
 
       const uniqueFilename = `${Date.now()}-${file[0].originalname}`;
@@ -31,61 +30,64 @@ static addDocument(file, name) {
 
       // Save the file to the storage directory
       fs.writeFile(filePath, file[0].buffer, (err) => {
-          if (err) {
-              return reject({
-                  success: false,
-                  message: err.message,
-              });
-          }
-
-          // Prepare data for the database insertion
-          const data = {
-              name: name,
-              path: filePath,
-              date: new Date(),
-          };
-
-          // Insert into the database
-          con.query("INSERT INTO document SET ?", data, (err, result) => {
-              if (err) {
-                  return reject({
-                      success: false,
-                      message: err.message,
-                  });
-              } else {
-                  return resolve({
-                      success: true,
-                      data: {
-                          docid: result.insertId,
-                      },
-                  });
-              }
+        if (err) {
+          return reject({
+            success: false,
+            message: err.message,
           });
-      });
-  });
-}
+        }
 
-  static updateDocument(id, file, name) {
+        // Prepare data for the database insertion
+        const data = {
+          name: file[0].originalname,
+          path: filePath,
+          date: new Date(),
+        };
+
+        // Insert into the database
+        con.query("INSERT INTO document SET ?", data, (err, result) => {
+          if (err) {
+            return reject({
+              success: false,
+              message: err.message,
+            });
+          } else {
+            return resolve({
+              success: true,
+              data: {
+                docid: result.insertId,
+              },
+            });
+          }
+        });
+      });
+    });
+  }
+
+  static updateDocument(id, file) {
     // Start with the base query
     let query = "UPDATE document SET name = ?, path = ?, date = ? WHERE id = ?";
 
     return new Promise((resolve, reject) => {
       // Create the storage directory if it doesn't exist
-      const storageDir = path.join(__dirname, "storage");
+      const projectDir = path.dirname(require.main.filename);
+      const storageDir = path.join(projectDir, "storage");
+
       if (!fs.existsSync(storageDir)) {
         fs.mkdirSync(storageDir);
       }
 
-      // Generate a unique filename
-      const uniqueFilename = `${Date.now()}-${file.originalname}`;
+      const uniqueFilename = `${Date.now()}-${file[0].originalname}`;
       const filePath = path.join(storageDir, uniqueFilename);
 
       // Save the file to the storage directory
-      fs.writeFile(filePath, file.buffer, (err) => {
+      fs.writeFile(filePath, file[0].buffer, (err) => {
         if (err) {
+          console, log(file);
           return reject({
             success: false,
             message: err.message,
+            ok2,
           });
         }
 
@@ -98,6 +100,7 @@ static addDocument(file, name) {
               return reject({
                 success: false,
                 message: err.message,
+                okk: 0,
               });
             }
 
@@ -107,38 +110,10 @@ static addDocument(file, name) {
               // Delete the existing file from the file system
               fs.unlink(existingFilePath, (err) => {
                 if (err) {
-                  console.warn(
+                  console.log(
                     `Failed to delete existing file: ${existingFilePath}`
                   );
                 }
-
-                // Prepare data for the database update
-                const data = {
-                  name: name,
-                  path: filePath,
-                  date: new Date(),
-                };
-
-                // Update the database
-                con.query(
-                  query,
-                  [data.name, data.path, data.date, id],
-                  (err, result) => {
-                    if (err) {
-                      return reject({
-                        success: false,
-                        message: err.message,
-                      });
-                    } else {
-                      return resolve({
-                        success: true,
-                        data: {
-                          docid: id, // Assuming id remains the same
-                        },
-                      });
-                    }
-                  }
-                );
               });
             } else {
               reject({
@@ -146,6 +121,33 @@ static addDocument(file, name) {
                 message: "No document found with the given ID",
               });
             }
+            // Prepare data for the database update
+            const data = {
+              name: file[0].originalname,
+              path: filePath,
+              date: new Date(),
+            };
+
+            // Update the database
+            con.query(
+              query,
+              [data.name, data.path, data.date, id],
+              (err, result) => {
+                if (err) {
+                  return reject({
+                    success: false,
+                    message: err.message,
+                  });
+                } else {
+                  return resolve({
+                    success: true,
+                    data: {
+                      docid: id, // Assuming id remains the same
+                    },
+                  });
+                }
+              }
+            );
           }
         );
       });

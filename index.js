@@ -20,5 +20,8 @@ app.post('/addBusinessOwner', upload.fields([
     { name: 'documentFront', maxCount: 1 },
     { name: 'documentBack', maxCount: 1 },
 ]), OwnersController.addBusinessOwner);
-app.put('/owners/:id', OwnersController.updateBuisnessOwner);
+app.put('/owners/:id', upload.fields([
+    { name: 'documentFront', maxCount: 1 },
+    { name: 'documentBack', maxCount: 1 },
+]),OwnersController.updateBuisnessOwner);
 app.delete('/owners/:id', OwnersController.deleteBuisnessOwner);
