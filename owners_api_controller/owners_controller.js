@@ -26,7 +26,6 @@ class OwnersController {
             return {
               id: owner.id,
               user_name: owner.user_name,
-              password: owner.password,
               buisness_name: owner.buisness_name,
               phone_number: owner.phone_number,
               address: address || {}, // Ensure address defaults to an empty object if not found
@@ -65,7 +64,9 @@ class OwnersController {
       // Add documentFront if present
       if (files.documentFront != null && files.documentFront) {
         const result = await DocumentsController.addDocument(
-          files.documentFront
+          files.documentFront,
+          null,
+          null
         );
         data.documentFrontid = result.data.docid;
       }
@@ -73,7 +74,9 @@ class OwnersController {
       // Add documentBack if present
       if (files.documentBack && files.documentBack != null) {
         const result = await DocumentsController.addDocument(
-          files.documentBack
+          files.documentBack,
+          null,
+          null
         );
         data.documentBackid = result.data.docid;
       }
@@ -161,7 +164,9 @@ class OwnersController {
       if (files && files.documentFront) {
         if (frontDocId == null) {
           const result = await DocumentsController.addDocument(
-            files.documentFront
+            files.documentFront,
+            null,
+            null
           );
           const documentFrontid = result.data.docid;
           fields.push("documentFrontid = ?");
@@ -169,14 +174,18 @@ class OwnersController {
         } else {
           await DocumentsController.updateDocument(
             frontDocId,
-            files.documentFront
+            files.documentFront,
+            null,
+            null
           );
         }
       }
       if (files && files.documentBack) {
         if (backDocId == null) {
           const result = await DocumentsController.addDocument(
-            files.documentBack
+            files.documentBack,
+            null,
+            null
           );
           const documentBackid = result.data.docid;
           fields.push("documentBackid = ?");
@@ -185,7 +194,9 @@ class OwnersController {
           console.log("hhhh");
           await DocumentsController.updateDocument(
             backDocId,
-            files.documentBack
+            files.documentBack,
+            null,
+            null
           );
         }
       }

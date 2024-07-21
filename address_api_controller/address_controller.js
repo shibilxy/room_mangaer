@@ -103,7 +103,18 @@ class AddressController {
       });
     });
   }
-
+  static async deleteAddressById(building_id) {
+    return new Promise((resolve, reject) => {
+      con.query(
+        "DELETE FROM address WHERE id = ?",
+        [building_id],
+        (err, result) => {
+          if (err) return reject(err);
+          resolve(result);
+        }
+      );
+    });
+  }
   static deleteAddress(req, res) {
     const address_id = req.params.id;
     con.query(

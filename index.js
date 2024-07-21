@@ -7,9 +7,11 @@ const upload = multer({ storage: storage });
 
 const OwnersController = require("./owners_api_controller/owners_controller");
 const BuildingController = require("./building_api_controler/building_controllers");
+const HallController = require("./hall_api_controller/hall_controller");
 const app = express();
-
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
@@ -34,15 +36,21 @@ app.put(
 );
 app.delete("/owners/:id", OwnersController.deleteBuisnessOwner);
 
-app.get("/building", BuildingController.getAllbuisness_owners);
+app.get("/building/:id", BuildingController.getAllBuilding);
 app.post(
   "/addBuilding",
-  upload.fields([{ name: "images" }]),
-  BuildingController.addBusinessOwner
+  upload.array("images", 10),
+  BuildingController.addBuilding
 );
-app.put(
-  "/building/:id",
-  upload.fields([{ name: "images" }]),
-  BuildingController.updateBuisnessOwner
-);
-app.delete("/building/:id", BuildingController.deleteBuisnessOwner);
+app.put("/building/:id", upload.array("images", 10), async (req, res) => {
+  await BuildingController.updateBuilding(req, res);
+});
+app.delete("/building/:id", BuildingController.deleteBuilding);
+
+app.get("/hall/:id", HallController.getAllhall);
+app.post("/addHall", async (req, res) => {
+  console.log(req.body);
+  await HallController.addhall(req, res);
+});
+app.put("/hall/:id", HallController.updatehall);
+app.delete("/hall/:id", HallController.deletehall);

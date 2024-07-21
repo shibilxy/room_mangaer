@@ -4,35 +4,35 @@ const con = require("../connection");
 const DocumentsController = require("../document_api_controller/documents_controller");
 const SpecificationController = require("../specifications_api_controller/specifications_controller");
 
-class BuildingController {
-  static getAllBuilding(req, res) {
+class RoomController {
+  static getAllroom(req, res) {
     const query = util.promisify(con.query).bind(con);
 
-    query("SELECT * FROM building WHERE building_owner_id = ?", [req.params.id])
-      .then(async (buildings) => {
-        // Map through the buildings and fetch additional data
+    query("SELECT * FROM room WHERE room_owner_id = ?", [req.params.id])
+      .then(async (rooms) => {
+        // Map through the rooms and fetch additional data
         const results = await Promise.all(
-          buildings.map(async (building) => {
+          rooms.map(async (room) => {
             const address = await AddressController.getAddress(
-              building.address_id
+              room.address_id
             );
             const specification =
               await SpecificationController.getAllSpecifications(
-                building.id,
-                "building"
+                room.id,
+                "room"
               );
             const documents = await DocumentsController.getAllDocument(
-              building.id,
-              "building"
+              room.id,
+              "room"
             );
             return {
-              id: building.id,
-              name: building.name,
-              description: building.description,
-              balace: building.total_rooms - building.filled_rooms,
-              no_of_floors: building.no_of_floors,
-              total_rooms: building.total_rooms,
-              filled_rooms: building.filled_rooms,
+              id: room.id,
+              name: room.name,
+              description: room.description,
+              balace: room.total_rooms - room.filled_rooms,
+              no_of_floors: room.no_of_floors,
+              total_rooms: room.total_rooms,
+              filled_rooms: room.filled_rooms,
               specifications: specification,
               documents: documents,
               address: address || {}, // Ensure address defaults to an empty object if not found
@@ -51,11 +51,11 @@ class BuildingController {
         res.status(500).send({ error: err.message });
       });
   }
-  static async deleteBuildingById(building_id) {
+  static async deleteroomById(room_id) {
     return new Promise((resolve, reject) => {
       con.query(
-        "DELETE FROM building WHERE id = ?",
-        [building_id],
+        "DELETE FROM room WHERE id = ?",
+        [room_id],
         (err, result) => {
           if (err) return reject(err);
           resolve(result);
@@ -64,7 +64,7 @@ class BuildingController {
     });
   }
 
-  static async addBuilding(req, res) {
+  static async addroom(req, res) {
     console.log("error");
     const data = req.body;
     const files = req.files;
@@ -79,8 +79,8 @@ class BuildingController {
         delete data.address;
       }
 
-      // Insert building
-      con.query("INSERT INTO building SET ?", data, async (err, result) => {
+      // Insert room
+      con.query("INSERT INTO room SET ?", data, async (err, result) => {
         if (err) {
           return res.status(500).send({ error: "Something went wrong" });
         }
@@ -88,18 +88,18 @@ class BuildingController {
         try {
           await DocumentsController.addDocumentWithtype(
             files,
-            "building",
+            "room",
             result.insertId
           );
           await SpecificationController.addSpecifications(
             specifications,
-            "building",
+            "room",
             result.insertId
           );
           return res.status(200).send({ success: true });
         } catch (e) {
           console.log(e);
-          await BuildingController.deleteBuildingById(result.insertId);
+          await RoomController.deleteroomById(result.insertId);
           await AddressController.deleteAddressById(data.address_id);
           return res
             .status(500)
@@ -111,20 +111,20 @@ class BuildingController {
       return res.status(500).send({ error: "Something went wrong" });
     }
   }
-  static async updateBuilding(req, res) {
+  static async updateroom(req, res) {
     const query = util.promisify(con.query).bind(con);
     try {
       // First, fetch the document IDs and address ID from the database
-      const fetchQuery = "SELECT address_id FROM building WHERE id = ?";
+      const fetchQuery = "SELECT address_id FROM room WHERE id = ?";
       const fetchResult = await query(fetchQuery, [req.params.id]);
       if (fetchResult.length == 0) {
-        return res.status(404).send({ error: "Building not found" });
+        return res.status(404).send({ error: "room not found" });
       }
 
       const addressId = fetchResult[0].address_id;
 
       // Start with the base update query
-      let updateQuery = "UPDATE building SET ";
+      let updateQuery = "UPDATE room SET ";
       const data = [];
       const fields = [];
       const files = req.files;
@@ -182,7 +182,7 @@ class BuildingController {
 
         await DocumentsController.processDocuments(
           documents,
-          "building",
+          "room",
           req.params.id
         );
       }
@@ -190,7 +190,7 @@ class BuildingController {
       res.send({
         success: true,
         data: {},
-        message: "Building updated successfully",
+        message: "room updated successfully",
       });
     } catch (err) {
       console.log(err);
@@ -198,11 +198,11 @@ class BuildingController {
     }
   }
 
-  static deleteBuilding(req, res) {
-    const building_id = req.params.id;
+  static deleteroom(req, res) {
+    const room_id = req.params.id;
     con.query(
-      "DELETE FROM building WHERE id = ?",
-      [building_id],
+      "DELETE FROM room WHERE id = ?",
+      [room_id],
       (err, result) => {
         if (err) {
           res.status(500).send({ error: err.message });
@@ -214,4 +214,4 @@ class BuildingController {
   }
 }
 
-module.exports = BuildingController;
+module.exports = RoomController;

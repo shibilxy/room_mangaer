@@ -16,8 +16,26 @@ class DocumentsController {
         throw err;
       });
   }
-
-  static addDocument(file) {
+  static getAllDocument(docSpecId, type) {
+    const query = util.promisify(con.query).bind(con);
+    return query("SELECT * FROM document WHERE doc_type_id = ? AND type = ?", [
+      docSpecId,
+      type,
+    ])
+      .then((result) => {
+        console.log(result);
+        // Add updated: false to each item
+        return result.map((item) => ({
+          ...item,
+          updated: false,
+        }));
+      })
+      .catch((err) => {
+        console.error(err);
+        throw err;
+      });
+  }
+  static addDocument(file, type, doc_type_id) {
     return new Promise((resolve, reject) => {
       const projectDir = path.dirname(require.main.filename);
       const storageDir = path.join(projectDir, "storage");
@@ -43,9 +61,9 @@ class DocumentsController {
           name: file[0].originalname,
           path: storePath,
           date: new Date(),
+          type: type,
+          doc_type_id: doc_type_id,
         };
-
-        console.log('File stored at:', storePath);
 
         con.query("INSERT INTO document SET ?", data, (err, result) => {
           if (err) {
@@ -66,9 +84,36 @@ class DocumentsController {
     });
   }
 
+  static async addDocumentWithtype(filesvalues, type, doc_type_id) {
+    try {
+      const filePromises = filesvalues.map((file) => {
+        return this.addDocument([file], type, doc_type_id);
+      });
 
-  static updateDocument(id, file) {
-    const query = "UPDATE document SET name = ?, path = ?, date = ? WHERE id = ?";
+      const results = await Promise.all(filePromises);
+      return results;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+  static processDocuments(documents, type, doc_type_id) {
+    return Promise.all(
+      documents.map((doc) => {
+        console.log(doc.id);
+        if (doc.id) {
+          return this.updateDocument(doc.id, doc.file, type, doc_type_id);
+        } else {
+          return this.addDocument(doc.file, type, doc_type_id);
+        }
+      })
+    );
+  }
+
+  static updateDocument(id, file, type, doc_type_id) {
+    console.log(id);
+    const query =
+      "UPDATE document SET name = ?, path = ?, date = ? WHERE id = ?";
 
     return new Promise((resolve, reject) => {
       const projectDir = path.dirname(require.main.filename);
@@ -84,65 +129,79 @@ class DocumentsController {
 
       fs.writeFile(filePath, file[0].buffer, (err) => {
         if (err) {
-          console.log('Error writing file:', err);
+          console.log("Error writing file:", err);
           return reject({
             success: false,
             message: err.message,
           });
         }
 
-        con.query("SELECT path FROM document WHERE id = ?", [id], (err, result) => {
-          if (err) {
-            return reject({
-              success: false,
-              message: err.message,
-            });
-          }
-
-          if (result.length > 0) {
-            const existingFilePath = result[0].path.replace(this.url, '');
-            const absoluteExistingFilePath = path.join(projectDir, existingFilePath);
-
-            fs.unlink(absoluteExistingFilePath, (err) => {
-              if (err) {
-                console.log(`Failed to delete existing file: ${absoluteExistingFilePath}`);
-              }
-            });
-          } else {
-            return reject({
-              success: false,
-              message: "No document found with the given ID",
-            });
-          }
-
-          console.log('New file stored at:', storePath);
-
-          const data = {
-            name: file[0].originalname,
-            path: storePath,
-            date: new Date(),
-          };
-
-          con.query(query, [data.name, data.path, data.date, id], (err, result) => {
+        con.query(
+          "SELECT path FROM document WHERE id = ?",
+          [id],
+          (err, result) => {
             if (err) {
               return reject({
                 success: false,
                 message: err.message,
               });
+            }
+
+            if (result.length > 0) {
+              const existingFilePath = result[0].path.replace(this.url, "");
+              const absoluteExistingFilePath = path.join(
+                projectDir,
+                existingFilePath
+              );
+
+              fs.unlink(absoluteExistingFilePath, (err) => {
+                if (err) {
+                  console.log(
+                    `Failed to delete existing file: ${absoluteExistingFilePath}`
+                  );
+                }
+              });
             } else {
-              return resolve({
-                success: true,
-                data: {
-                  docid: id,
-                },
+              return reject({
+                success: false,
+                message: "No document found with the given ID",
               });
             }
-          });
-        });
+
+            console.log("New file stored at:", storePath);
+
+            const data = {
+              name: file[0].originalname,
+              path: storePath,
+              date: new Date(),
+              type: type,
+              doc_type_id: doc_type_id,
+            };
+
+            con.query(
+              query,
+              [data.name, data.path, data.date, id],
+              (err, result) => {
+                if (err) {
+                  return reject({
+                    success: false,
+                    message: err.message,
+                  });
+                } else {
+                  return resolve({
+                    success: true,
+                    data: {
+                      docid: id,
+                    },
+                  });
+                }
+              }
+            );
+          }
+        );
       });
     });
   }
-
 
   static deleteDocument(req, res) {
     const document_id = req.params.id;
