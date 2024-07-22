@@ -8,6 +8,7 @@ const upload = multer({ storage: storage });
 const OwnersController = require("./owners_api_controller/owners_controller");
 const BuildingController = require("./building_api_controler/building_controllers");
 const HallController = require("./hall_api_controller/hall_controller");
+const RoomController = require("./room_api_controller/room_controller");
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -54,3 +55,16 @@ app.post("/addHall", async (req, res) => {
 });
 app.put("/hall/:id", HallController.updatehall);
 app.delete("/hall/:id", HallController.deletehall);
+
+
+
+app.get("/room/:id", RoomController.getAllroom);
+app.post(
+  "/addRoom",
+  upload.array("images", 10),
+  RoomController.addRoom
+);
+app.put("/room/:id", upload.array("images", 10), async (req, res) => {
+  await RoomController.updateroom(req, res);
+});
+app.delete("/room/:id", RoomController.deleteroom);

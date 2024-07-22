@@ -5,6 +5,21 @@ const DocumentsController = require("../document_api_controller/documents_contro
 const SpecificationController = require("../specifications_api_controller/specifications_controller");
 
 class BuildingController {
+  static getAllBuildingForRooms(docSpecId, type) {
+    const query = util.promisify(con.query).bind(con);
+    return query(
+      "SELECT * FROM building WHERE id = ?",
+      [docSpecId, type]
+    )
+      .then((result) => {
+        console.log(result);
+        return result;
+      })
+      .catch((err) => {
+        console.error(err);
+        throw err;
+      });
+  }
   static getAllBuilding(req, res) {
     const query = util.promisify(con.query).bind(con);
 
