@@ -2,6 +2,7 @@
 const express = require("express");
 const multer = require("multer");
 
+const path = require("path");
 const storage = multer.memoryStorage(); // Store file buffer in memory
 const upload = multer({ storage: storage });
 
@@ -17,6 +18,8 @@ app.listen(3000, () => {
   console.log("Server is running on port 3000");
 });
 
+const storageDir = path.join(__dirname, "storage");
+app.use("/storage", express.static(storageDir));
 //owners
 app.get("/owners", OwnersController.getAllbuisness_owners);
 app.post(
@@ -56,14 +59,8 @@ app.post("/addHall", async (req, res) => {
 app.put("/hall/:id", HallController.updatehall);
 app.delete("/hall/:id", HallController.deletehall);
 
-
-
 app.get("/room/:id", RoomController.getAllroom);
-app.post(
-  "/addRoom",
-  upload.array("images", 10),
-  RoomController.addRoom
-);
+app.post("/addRoom", upload.array("images", 10), RoomController.addRoom);
 app.put("/room/:id", upload.array("images", 10), async (req, res) => {
   await RoomController.updateroom(req, res);
 });

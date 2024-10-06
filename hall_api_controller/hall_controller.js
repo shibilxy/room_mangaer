@@ -21,6 +21,21 @@ class HallController {
       res.status(500).send({ error: err.message });
     }
   }
+  static getHallsbyBuildingId(building_id) {
+    const query = util.promisify(con.query).bind(con);
+    return query(
+      "SELECT * FROM hall WHERE building_id = ?", 
+      [building_id]
+    )
+      .then((result) => {
+        console.log(result);
+        return result;
+      })
+      .catch((err) => {
+        console.error(err);
+        throw err;
+      });
+  }
 
   static async deletehallById(hall_id) {
     const query = util.promisify(con.query).bind(con);
@@ -49,6 +64,7 @@ class HallController {
     }
 
     const query = util.promisify(con.query).bind(con);
+   
 
     try {
       const sql = con.format("INSERT INTO hall SET ?", data);

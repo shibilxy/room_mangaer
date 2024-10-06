@@ -1,32 +1,27 @@
 const util = require("util");
 const con = require("../connection");
-const AddressController = require("../address_api_controller/address_controller");
 
 const DocumentsController = require("../document_api_controller/documents_controller");
-class OwnersController {
-  static getAllbuisness_owners(req, res) {
+class ExpenseController {
+  static getExpenseWithType(req, res) {
     // Promisify the query method
     const query = util.promisify(con.query).bind(con);
 
-    query("SELECT * FROM buisness_owner")
+    query("SELECT * FROM expense where user_id ?",req.params.id)
       .then(async (owners) => {
         // Map through the owners and fetch additional data
         const results = await Promise.all(
           owners.map(async (owner) => {
-           
-            const bill_doc	 = await DocumentsController.getDocument(
-              owner.bill_doc_id	
+            const bill_doc = await DocumentsController.getDocument(
+              owner.bill_doc_id
             );
-        
 
             return {
               id: owner.id,
               user_name: owner.user_name,
               buisness_name: owner.buisness_name,
               phone_number: owner.phone_number,
-            
               bill_doc: bill_doc || "", // Ensure URLs default to an empty string if not found
-             
               alternative_number: owner.alternative_number,
               start_date: owner.start_date,
               end_date: owner.end_date,
@@ -58,7 +53,6 @@ class OwnersController {
 
     try {
       // Add documentFront if present
-    
 
       // Add documentBack if present
       if (files.bill_doc && files.bill_doc != null) {
@@ -69,10 +63,10 @@ class OwnersController {
         );
         data.bill_doc_id = result.data.docid;
       }
-     
+
       // console.log(data);
 
-    //   delete data.documentBack;
+      //   delete data.documentBack;
 
       // Insert business owner data into the database
       con.query("INSERT INTO expense SET ?", data, (err, result) => {
@@ -81,13 +75,13 @@ class OwnersController {
           res.status(450).send({
             succes: false,
             data: {},
-            message: "owner added failed",
+            message: "Expense added failed",
           });
         } else {
           res.status(200).send({
             succes: true,
             data: {},
-            message: "owner added sucessfully",
+            message: "Expense added sucessfully",
           });
         }
       });
@@ -96,24 +90,21 @@ class OwnersController {
       res.status(500).send({
         succes: false,
         data: {},
-        message: "owner addededdd failed",
+        message: "Expense addededdd failed",
       });
     }
   }
-  static async updateBuisnessOwner(req, res) {
+  static async updateExpense(req, res) {
     const query = util.promisify(con.query).bind(con);
     try {
       // First, fetch the document IDs and address ID from the database
-      const fetchQuery =
-        "SELECT documentFrontid, documentBackid, address_id FROM expense WHERE id = ?";
+      const fetchQuery = "SELECT bill_doc_id FROM expense WHERE id = ?";
       const fetchResult = await query(fetchQuery, [req.params.id]);
       console.log(fetchResult.length);
       if (fetchResult.length == 0) {
         return res.status(404).send({ error: "Business owner not found" });
       }
-      const frontDocId = fetchResult[0].documentFrontid;
-      const backDocId = fetchResult[0].documentBackid;
-      const addressId = fetchResult[0].address_id;
+      const bill_doc_id = fetchResult[0].bill_doc_id;
 
       console.log();
       // Start with the base update query
@@ -123,103 +114,58 @@ class OwnersController {
       const files = req.files;
 
       // Check which fields are provided and add them to the query
-      if (req.body.buisness_name) {
-        fields.push("buisness_name = ?");
-        data.push(req.body.buisness_name);
-      }
-      if (req.body.user_name) {
-        fields.push("user_name = ?");
-        data.push(req.body.user_name);
-      }
-      if (req.body.password) {
-        fields.push("password = ?");
-        data.push(req.body.password);
-      }
-      if (req.body.status) {
-        fields.push("status = ?");
-        data.push(req.body.status);
-      }
-      if (req.body.contact_number) {
-        fields.push("contact_number = ?");
-        data.push(req.body.contact_number);
-      }
-      if (files && files.documentFront) {
-        if (frontDocId == null) {
-          const result = await DocumentsController.addDocument(
-            files.documentFront,
-            null,
-            null
-          );
-          const documentFrontid = result.data.docid;
-          fields.push("documentFrontid = ?");
-          data.push(documentFrontid);
-        } else {
-          await DocumentsController.updateDocument(
-            frontDocId,
-            files.documentFront,
-            null,
-            null
-          );
-        }
-      }
-      if (files && files.documentBack) {
-        if (backDocId == null) {
-          const result = await DocumentsController.addDocument(
-            files.documentBack,
-            null,
-            null
-          );
-          const documentBackid = result.data.docid;
-          fields.push("documentBackid = ?");
-          data.push(documentBackid);
-        } else {
-          console.log("hhhh");
-          await DocumentsController.updateDocument(
-            backDocId,
-            files.documentBack,
-            null,
-            null
-          );
-        }
-      }
-      if (req.body.address) {
-        if (addressId == null) {
-          const result = await AddressController.addAddress(req.body.address);
 
-          const address_id = result.data.docid;
-          fields.push("address_id = ?");
-          data.push(address_id);
+      if (files && files.bill_doc) {
+        if (bill_doc_id == null) {
+          const result = await DocumentsController.addDocument(
+            files.bill_doc,
+            null,
+            null
+          );
+          const bill_do_id = result.data.docid;
+          fields.push("bill_doc_id = ?");
+          data.push(bill_do_id);
         } else {
-          await AddressController.updateAddress(addressId, req.body.address);
+          await DocumentsController.updateDocument(
+            bill_doc_id,
+            files.documentFront,
+            null,
+            null
+          );
         }
       }
-      if (req.body.type) {
-        fields.push("type = ?");
-        data.push(req.body.type);
+
+      if (req.body.building_id) {
+        fields.push("building_id = ?");
+        data.push(req.body.building_id);
       }
-      if (req.body.alternative_number) {
-        fields.push("alternative_number = ?");
-        data.push(req.body.alternative_number);
+      if (req.body.floor) {
+        fields.push("floor = ?");
+        data.push(req.body.floor);
       }
-      if (req.body.start_date) {
-        fields.push("start_date = ?");
-        data.push(req.body.start_date);
+      if (req.body.hall_id) {
+        fields.push("hall_id = ?");
+        data.push(req.body.hall_id);
       }
-      if (req.body.end_date) {
-        fields.push("end_date = ?");
-        data.push(req.body.end_date);
+      if (req.body.expense_name) {
+        fields.push("expense_name = ?");
+        data.push(req.body.expense_name);
       }
-      if (req.body.price) {
-        fields.push("price = ?");
-        data.push(req.body.price);
+      if (req.body.amount) {
+        fields.push("amount = ?");
+        data.push(req.body.amount);
       }
-      if (req.body.total_income) {
-        fields.push("total_income = ?");
-        data.push(req.body.total_income);
+      if (req.body.date) {
+        fields.push("date = ?");
+        data.push(req.body.date);
       }
-      if (req.body.total_caution_deposit) {
-        fields.push("total_caution_deposit = ?");
-        data.push(req.body.total_caution_deposit);
+      if (req.body.paid) {
+        fields.push("paid = ?");
+        data.push(req.body.paid);
+      }
+      if (req.body.user_id) {
+        fields.push("user_id = ?");
+        data.push(req.body.user_id);
       }
 
       // Ensure at least one field is being updated
@@ -259,4 +205,4 @@ class OwnersController {
   }
 }
 
-module.exports = OwnersController;
+module.exports = ExpenseController;

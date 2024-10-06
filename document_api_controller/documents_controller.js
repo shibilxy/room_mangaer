@@ -25,10 +25,7 @@ class DocumentsController {
       .then((result) => {
         console.log(result);
         // Add updated: false to each item
-        return result.map((item) => ({
-          ...item,
-          updated: false,
-        }));
+        return result;
       })
       .catch((err) => {
         console.error(err);
