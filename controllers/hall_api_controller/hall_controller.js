@@ -1,5 +1,5 @@
 const util = require("util");
-const con = require("../connection");
+const con = require("../../connection");
 
 class HallController {
   static async getAllhall(req, res) {

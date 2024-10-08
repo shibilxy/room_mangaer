@@ -1,4 +1,4 @@
-const con = require("../connection");
+const con = require("../../connection");
 const util = require('util');
 
 class AddressController {

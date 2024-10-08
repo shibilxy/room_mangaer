@@ -1,4 +1,4 @@
-const con = require('../connection');
+const con = require('../../connection');
 
 class CustomersController {
     static getAllCustomers(req, res) {

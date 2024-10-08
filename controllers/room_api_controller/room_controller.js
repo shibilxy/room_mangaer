@@ -1,9 +1,9 @@
 const { promisify } = require("util");
 const con = require("../../connection");
 const _query = con.query; // If `query` is a named export
-const { getAllDocument, addDocuments, processDocuments } = require("../controllers/document_api_controller/documents_controller");
-const { getAllSpecifications, addSpecifications, updateOrAdd } = require("../controllers/specifications_api_controller/specifications_controller");
-const { getBuildingById, updateBuildingRooms } = require("../controllers/building_api_controler/building_controllers");
+const { getAllDocument, addDocuments, processDocuments } = require("../document_api_controller/documents_controller");
+const { getAllSpecifications, addSpecifications, updateOrAdd } = require("../specifications_api_controller/specifications_controller");
+const { getBuildingById, updateBuildingRooms } = require("../building_api_controler/building_controllers");
 
 class RoomController {
   static async getAllRooms(req, res) {

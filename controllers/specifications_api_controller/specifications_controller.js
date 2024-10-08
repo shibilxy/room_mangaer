@@ -1,5 +1,5 @@
 const { log } = require("console");
-const con = require("../connection");
+const con = require("../../connection");
 const util = require("util");
 class SpecificationController {
   static getAllSpecifications(docSpecId, type) {

@@ -1,13 +1,27 @@
-import { promisify } from "util";
-import { getAddress, addAddress, deleteAddressById, updateAddress } from "../address_api_controller/address_controller";
-import con, { query as _query } from "../connection";
-import { getAllDocument, addDocumentWithtype, processDocuments } from "../document_api_controller/documents_controller";
-import { getHallsbyBuildingId } from "../hall_api_controller/hall_controller";
-import { default as RoomController } from "../room_api_controller/room_controller";
-import { getAllSpecifications, addSpecifications, updateOrAdd } from "../specifications_api_controller/specifications_controller";
+const { promisify } = require("util");
+const {
+  getAddress,
+  addAddress,
+  deleteAddressById,
+  updateAddress
+} = require("../address_api/address_controller");
+
+const con = require("../../connection");
+const { query: _query } = con;
+const {
+  getAllDocument,
+  addDocumentsWithtype,
+  processDocuments
+} = require("../document_api_controller/documents_controller");
+const { getHallsbyBuildingId } = require("../hall_api_controller/hall_controller");
+const {
+  getAllSpecifications,
+  addSpecifications,
+  updateOrAdd
+} = require("../specifications_api_controller/specifications_controller");
 
 class BuildingController {
-  static getAllBuildingForRooms(docSpecId) {
+  static getBuildingById(docSpecId) {
     const query = promisify(_query).bind(con);
     return query("SELECT * FROM building WHERE id = ?", [docSpecId])
       .then((result) => {
@@ -19,6 +33,18 @@ class BuildingController {
         throw err;
       });
   }
+  static async getRoomsByBuildingId(building_id) {
+    const query = promisify(_query).bind(con);
+
+    try {
+      const result = await query("SELECT * FROM room WHERE building_id = ?", [building_id]);
+      return result;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  }
+
   static getAllBuilding(req, res) {
     const query = promisify(_query).bind(con);
 
@@ -42,7 +68,7 @@ class BuildingController {
             const halls = await getHallsbyBuildingId(
               building.id
             );
-            const rooms = await RoomController.getRoomsbyBuildingId(
+            const rooms = await this.getRoomsbyBuildingId(
               building.id
             );
             return {
@@ -166,7 +192,7 @@ class BuildingController {
         }
 
         try {
-          await addDocumentWithtype(
+          await addDocumentsWithtype(
             files,
             "building",
             result.insertId
@@ -294,4 +320,4 @@ class BuildingController {
   }
 }
 
-export default BuildingController;
+module.exports = BuildingController;

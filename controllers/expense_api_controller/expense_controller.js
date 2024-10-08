@@ -1,7 +1,7 @@
 const util = require("util");
 const con = require("../../connection");
 
-const DocumentsController = require("../controllers/document_api_controller/documents_controller");
+const DocumentsController = require("../document_api_controller/documents_controller");
 class ExpenseController {
   static getExpenseWithType(req, res) {
     // Promisify the query method

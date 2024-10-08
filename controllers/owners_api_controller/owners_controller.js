@@ -1,6 +1,6 @@
 const util = require("util");
-const con = require("../connection");
-const AddressController = require("../address_api_controller/address_controller");
+const con = require("../../connection");
+const AddressController = require("../address_api/address_controller");
 const DocumentsController = require("../document_api_controller/documents_controller");
 
 class OwnersController {
@@ -174,13 +174,13 @@ class OwnersController {
 
       // Add documentFront if present
       if (files.documentFront) {
-        const result = await DocumentsController.addDocument(files.documentFront, null, null);
+        const result = await DocumentsController.addDocuments(files.documentFront, null, null);
         data.documentFrontid = result.data.docid;
       }
 
       // Add documentBack if present
       if (files.documentBack) {
-        const result = await DocumentsController.addDocument(files.documentBack, null, null);
+        const result = await DocumentsController.addDocuments(files.documentBack, null, null);
         data.documentBackid = result.data.docid;
       }
 
@@ -248,7 +248,7 @@ class OwnersController {
       // Update documentFront
       if (files && files.documentFront) {
         if (!frontDocId) {
-          const result = await DocumentsController.addDocument(files.documentFront, null, null);
+          const result = await DocumentsController.addDocuments(files.documentFront, null, null);
           fields.push("documentFrontid = ?"), data.push(result.data.docid);
         } else {
           await DocumentsController.updateDocument(frontDocId, files.documentFront, null, null);
@@ -258,7 +258,7 @@ class OwnersController {
       // Update documentBack
       if (files && files.documentBack) {
         if (!backDocId) {
-          const result = await DocumentsController.addDocument(files.documentBack, null, null);
+          const result = await DocumentsController.addDocuments(files.documentBack, null, null);
           fields.push("documentBackid = ?"), data.push(result.data.docid);
         } else {
           await DocumentsController.updateDocument(backDocId, files.documentBack, null, null);
